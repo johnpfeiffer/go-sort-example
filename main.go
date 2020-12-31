@@ -5,11 +5,7 @@ import (
 	"sort"
 )
 
-// Person is defined by name and age
-type Person struct {
-	Name string
-	Age  int
-}
+// go run main.go builtin-vs-custom.go sorting-maps.go
 
 func main() {
 	People := []Person{
@@ -19,42 +15,6 @@ func main() {
 	}
 	fmt.Printf("Original Listing: %v \n", People)
 
-	// Example of manually sorting using extra primitive data structures
-	AgeToPeople := make(map[int][]Person)
-	for _, p := range People {
-		// handle the edge case of not yet having a list entry in the map
-		_, ok := AgeToPeople[p.Age]
-		if !ok {
-			AgeToPeople[p.Age] = []Person{p}
-		} else {
-			temp := AgeToPeople[p.Age]
-			AgeToPeople[p.Age] = append(temp, p) // this maintains the pre-existing order on duplicates
-		}
-	}
-
-	// Sort by a property and then dereference the lookup map
-	// get the unique list of ages (each map key is unique)
-	var Ages []int
-	for age := range AgeToPeople {
-		Ages = append(Ages, age)
-	}
-	sort.Ints(Ages)
-
-	var PeopleSortedByAge []Person
-	for _, age := range Ages {
-		temp := AgeToPeople[age]
-		for _, p := range temp {
-			PeopleSortedByAge = append(PeopleSortedByAge, p)
-		}
-	}
-	fmt.Printf("Sorted by age Listing: %v \n", PeopleSortedByAge)
-
-	// Optionally create a subset of the "lowest N members"
-	// this could be more efficient if it was applied during the PeopleSortedByAge loop
-	PeopleSortedByAgeSubset := PeopleSortedByAge[:2]
-	fmt.Printf("Stable Subset of Sorted by age: %v \n", PeopleSortedByAgeSubset)
-
-	// Built in library that does the same thing (modifies the original slice)
 	// https://golang.org/pkg/sort/#SliceStable
 	sort.SliceStable(People, func(i, j int) bool { return People[i].Age < People[j].Age })
 	fmt.Printf("Original Sorted using BuiltIn SliceStable: %v \n", People)
@@ -63,30 +23,26 @@ func main() {
 	People = append(People, Person{Name: "Zorro", Age: 21})
 	sort.Sort(ByAge(People))
 	fmt.Printf("Original Sorted using a Customized Less: %v \n", People)
-}
 
-// ByAge is a sorted list of Persons
-type ByAge []Person
+	// verbose non-interface implementation
+	MySort(People)
 
-// Len implements the interface for Sort
-func (p ByAge) Len() int {
-	return len(p)
-}
-
-// Swap implements the interface for Sort
-func (p ByAge) Swap(i, j int) {
-	p[i], p[j] = p[j], p[i]
-}
-
-// Less implements the interface for Sort
-func (p ByAge) Less(i, j int) bool {
-	// customize sorting on age equivalence to use Name too
-	if p[i].Age == p[j].Age {
-		if p[i].Name <= p[j].Name {
-			return true
-		}
-		return false
+	// examples of sorting Maps, because maps are efficient O(1) lookups but not stored in sorted order
+	m := make(map[string]string)
+	m["z"] = "zebra"
+	m["aa"] = "Aardvark"
+	m["B"] = "Bear"
+	m["a"] = "antelope"
+	sortedKeys := SortByKey(m)
+	fmt.Printf("map sorted by Keys: ")
+	for _, key := range sortedKeys {
+		fmt.Printf("%s %s ", key, m[key])
 	}
-	// otherwise ages are not equal, simply use age
-	return p[i].Age < p[j].Age
+	fmt.Println()
+	sortedKeysByValue := SortByValue(m)
+	fmt.Printf("map sorted by Values: ")
+	for _, key := range sortedKeysByValue {
+		fmt.Printf("%s %s ", key, m[key])
+	}
+	fmt.Println()
 }

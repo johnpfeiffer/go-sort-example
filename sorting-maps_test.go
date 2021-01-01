@@ -7,12 +7,18 @@ import (
 )
 
 // defining the test structure separately and clear naming helps readability
-type sortByKeyTest struct {
+type sortedMapTest struct {
 	name     string
 	keys     []string
 	values   []string
 	expected []string
 }
+
+// some repeated test cases extracted for DRY
+var tcSingleLetter = sortedMapTest{name: "single", keys: []string{"a"}, values: []string{"a"},
+	expected: []string{"a"}}
+var tcSortedTwoChars = sortedMapTest{name: "already-sorted", keys: []string{"a", "b"}, values: []string{"alpha", "bravo"},
+	expected: []string{"a", "b"}}
 
 func TestSortByKeyEmpty(t *testing.T) {
 	t.Parallel()
@@ -30,13 +36,13 @@ func TestSortByKeyEmpty(t *testing.T) {
 func TestSortByKey(t *testing.T) {
 	t.Parallel()
 
-	testCases := []sortByKeyTest{
-		{name: "single", keys: []string{"a"}, values: []string{"a"},
-			expected: []string{"a"}},
-		{name: "already-sorted", keys: []string{"a", "b"}, values: []string{"alpha", "bravo"},
-			expected: []string{"a", "b"}},
+	testCases := []sortedMapTest{
+		tcSingleLetter,
+		tcSortedTwoChars,
 		{name: "reverse-sorted-and-caps", keys: []string{"c", "b", "A"}, values: []string{"charlie", "bravo", "alpha"},
 			expected: []string{"A", "b", "c"}},
+		{name: "unsorted-and-duplicate-values", keys: []string{"m", "x", "c"}, values: []string{"charlie", "charlie", "foobar"},
+			expected: []string{"c", "m", "x"}},
 	}
 
 	for _, tc := range testCases {
@@ -52,7 +58,35 @@ func TestSortByKey(t *testing.T) {
 	if result != nil {
 		t.Error("\nExpected:", nil, "\nReceived: ", result)
 	}
+}
 
+func TestSortByValue(t *testing.T) {
+	t.Parallel()
+
+	testCases := []sortedMapTest{
+		tcSingleLetter,
+		tcSortedTwoChars,
+		{name: "reverse-sorted-and-caps", keys: []string{"c", "b", "A"}, values: []string{"charlie", "bravo", "alpha"},
+			expected: []string{"A", "b", "c"}},
+		{name: "unsorted-and-duplicate-values-stable", keys: []string{"m", "x", "c"}, values: []string{"charlie", "charlie", "foobar"},
+			expected: []string{"m", "x", "c"}},
+		{name: "uppercase-values", keys: []string{"1", "2", "3"}, values: []string{"Bravo", "foo", "Alpha"},
+			expected: []string{"3", "1", "2"}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("%s: %v keys mapped to %v", tc.name, tc.keys, tc.values), func(t *testing.T) {
+			m := createMap(tc.keys, tc.values)
+			actual := SortByValue(m)
+			assertSlicesEqual(t, tc.expected, actual)
+		})
+	}
+
+	m := make(map[string]string)
+	result := SortByKey(m)
+	if result != nil {
+		t.Error("\nExpected:", nil, "\nReceived: ", result)
+	}
 }
 
 func assertSlicesEqual(t *testing.T, expected []string, result []string) {
